@@ -1,0 +1,97 @@
+[gd_scene load_steps=14 format=3 uid="uid://wgebkexbl2iw"]
+
+[ext_resource type="Shader" uid="uid://mh3oc0pio21d" path="res://shaders/ion_beam.gdshader" id="1_beam"]
+[ext_resource type="Script" uid="uid://2ttpbct0ti4" path="res://scripts/ion_beam_controller.gd" id="2_controller"]
+[ext_resource type="Resource" uid="uid://c2flt0aeuasvb" path="res://resources/default_beam.tres" id="3_config"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_7dm0k"]
+sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+ground_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+
+[sub_resource type="Sky" id="Sky_ig7tw"]
+sky_material = SubResource("ProceduralSkyMaterial_7dm0k")
+
+[sub_resource type="Environment" id="Environment_0xm2m"]
+background_mode = 2
+sky = SubResource("Sky_ig7tw")
+tonemap_mode = 2
+glow_enabled = true
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_h2yge"]
+noise_type = 2
+frequency = 0.0204
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_1bvp3"]
+noise = SubResource("FastNoiseLite_h2yge")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_lquwl"]
+albedo_color = Color(0.34407577, 0.34407574, 0.34407574, 1)
+detail_enabled = true
+detail_mask = SubResource("NoiseTexture2D_1bvp3")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_7mycd"]
+material = SubResource("StandardMaterial3D_lquwl")
+size = Vector2(10, 10)
+
+[sub_resource type="WorldBoundaryShape3D" id="WorldBoundaryShape3D_7dm0k"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_beam"]
+render_priority = 1
+shader = ExtResource("1_beam")
+shader_parameter/beam_color = Color(0.2, 0.6, 1, 1)
+shader_parameter/core_color = Color(0.8, 0.95, 1, 1)
+shader_parameter/intensity = 3.0
+shader_parameter/beam_width = 0.08
+shader_parameter/core_width = 0.3
+shader_parameter/edge_softness = 0.5
+shader_parameter/wobble_amount = 0.015
+shader_parameter/wobble_frequency = 12.0
+shader_parameter/wobble_speed = 8.0
+shader_parameter/pulse_amount = 0.3
+shader_parameter/pulse_speed = 4.0
+shader_parameter/flicker_amount = 0.15
+shader_parameter/flicker_speed = 30.0
+shader_parameter/scanline_density = 25.0
+shader_parameter/scanline_speed = 5.0
+shader_parameter/scanline_strength = 0.25
+shader_parameter/pixel_size = 0.0
+shader_parameter/breakup_amount = 0.0
+shader_parameter/breakup_speed = 2.0
+shader_parameter/taper_top = 0.0
+shader_parameter/taper_bottom = 0.0
+shader_parameter/initial_width_mult = 1.0
+shader_parameter/final_width_mult = 1.0
+shader_parameter/duration = 2.0
+shader_parameter/loop_animation = false
+shader_parameter/ping_pong = false
+shader_parameter/tween_type = 0
+shader_parameter/trans_type = 0
+
+[sub_resource type="QuadMesh" id="QuadMesh_beam"]
+material = SubResource("ShaderMaterial_beam")
+size = Vector2(1, 10)
+
+[node name="Main" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_0xm2m")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
+shadow_enabled = true
+
+[node name="StaticBody3D" type="StaticBody3D" parent="."]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="StaticBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.025046825, 0.010538101, -0.018683672)
+mesh = SubResource("PlaneMesh_7mycd")
+skeleton = NodePath("../..")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D"]
+shape = SubResource("WorldBoundaryShape3D_7dm0k")
+
+[node name="IonBeam" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)
+mesh = SubResource("QuadMesh_beam")
+script = ExtResource("2_controller")
+config = ExtResource("3_config")

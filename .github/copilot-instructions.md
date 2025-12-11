@@ -1,0 +1,86 @@
+# Copilot Instructions for shader-training
+
+## Project Overview
+
+This is a **Godot 4.5** project focused on shader development and experimentation. Uses the **Forward Plus** renderer. The learning goal is to build toward an **ion cannon charging effect**.
+
+## Architecture
+
+- **Entry Scene**: [main.tscn](../main.tscn) - 3D scene with environment, lighting, ground plane, and ion beam
+- **Shaders**: [shaders/](../shaders/) - Custom `.gdshader` files
+- **Renderer**: Forward Plus (GPU-driven, clustered lighting)
+
+## Current Effects
+
+### Ion Beam ([shaders/ion_beam.gdshader](../shaders/ion_beam.gdshader))
+A targeting laser effect using a `QuadMesh` billboard with `spatial` shader:
+- `render_mode unshaded, cull_disabled, depth_draw_opaque`
+- Uses UV coordinates for 2D-style effects on a 3D plane
+- Full suite of visual effects for energy beam aesthetics
+
+**Effect Parameters:**
+| Category | Parameters |
+|----------|------------|
+| Appearance | `beam_color`, `core_color`, `intensity`, `beam_width`, `core_width`, `edge_softness` |
+| Wobble | `wobble_amount`, `wobble_frequency`, `wobble_speed` |
+| Pulse/Flicker | `pulse_amount`, `pulse_speed`, `flicker_amount`, `flicker_speed` |
+| Scanlines | `scanline_density`, `scanline_speed`, `scanline_strength` |
+| Digital FX | `pixel_size`, `breakup_amount`, `breakup_speed` |
+| Taper | `taper_top`, `taper_bottom` |
+| Animation | `initial_width_mult`, `final_width_mult`, `duration`, `loop_animation`, `ping_pong` |
+| Easing | `tween_type` (0-8), `trans_type` (0-2) |
+
+**Architecture Pattern:**
+- [resources/ion_beam_config.gd](../resources/ion_beam_config.gd) - `@tool` Resource for live editor preview
+- [scripts/ion_beam_controller.gd](../scripts/ion_beam_controller.gd) - `@tool` controller applies config to material
+- [resources/default_beam.tres](../resources/default_beam.tres) - Saved preset (duplicate for variants)
+
+Applied to a vertical `QuadMesh` (1x10 units, orientation=2) positioned at Y=5.
+
+## Godot-Specific Patterns
+
+### File Formats
+- `.tscn` - Text-based scene files (prefer for version control)
+- `.gdshader` - Shader files (GLSL-like syntax)
+- `.tres` - Text-based resource files
+- `.gd` - GDScript files
+
+### Shader Development
+When creating shaders:
+```gdshader
+shader_type spatial;  // For 3D materials
+// or: shader_type canvas_item;  // For 2D
+// or: shader_type particles;  // For GPU particles
+
+void fragment() {
+    ALBEDO = vec3(1.0);
+}
+```
+
+### Material Hierarchy
+Current scene uses `StandardMaterial3D` with `NoiseTexture2D` for detail masking. For custom shaders, create `ShaderMaterial` and assign a `.gdshader` resource.
+
+## Key Commands
+
+```bash
+# Run project from CLI (ensure Godot is in PATH)
+godot --path . 
+
+# Export debug build
+godot --export-debug "Windows Desktop" build/game.exe
+```
+
+## Conventions
+
+- Scene root nodes use PascalCase (e.g., `Main`, `Player`)
+- Keep shaders in a `shaders/` directory as project grows
+- Use `SubResource` for inline resources in `.tscn` files; extract to `.tres` for reuse
+- UTF-8 encoding for all files (per `.editorconfig`)
+
+## Environment Setup
+
+The scene includes:
+- **ProceduralSkyMaterial** with horizon color blending
+- **ACES tonemapping** (`tonemap_mode = 2`)
+- **Glow** post-processing enabled
+- **DirectionalLight3D** with shadows at 45° elevation
