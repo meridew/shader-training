@@ -39,8 +39,8 @@ uniform float chromatic_amount : hint_range(0.0, 0.1) = 0.0;
 uniform float chromatic_speed : hint_range(0.0, 10.0) = 2.0;
 
 // === EFFECTS ===
-// Wobble - lateral displacement along the beam
-uniform float wobble_amount : hint_range(0.0, 0.2) = 0.015;
+// Wobble - smooth lateral wave displacement along the beam
+uniform float wobble_amount : hint_range(0.0, 0.5) = 0.0;
 uniform float wobble_frequency : hint_range(0.0, 50.0) = 12.0;
 uniform float wobble_speed : hint_range(0.0, 20.0) = 8.0;
 
@@ -239,7 +239,6 @@ void fragment() {
     float effective_charge = use_charge_level ? charge_level : 1.0;
     float charge_intensity_mult = mix(0.3, 1.0, effective_charge);
     float charge_width_mult = mix(0.5, 1.0, effective_charge);
-    float charge_instability = use_charge_level ? (1.0 - effective_charge) * 0.5 : 0.0;
     
     // === ANIMATION PROGRESS ===
     float raw_time = TIME / duration;
@@ -258,10 +257,9 @@ void fragment() {
     
     // === JITTER ===
     float jitter = 0.0;
-    float total_jitter = jitter_amount + charge_instability;
-    if (total_jitter > 0.0) {
-        jitter = (noise(TIME * jitter_speed) - 0.5) * total_jitter * 2.0;
-        jitter += (noise(TIME * jitter_speed * 3.7 + 100.0) - 0.5) * total_jitter;
+    if (jitter_amount > 0.0) {
+        jitter = (noise(TIME * jitter_speed) - 0.5) * jitter_amount * 2.0;
+        jitter += (noise(TIME * jitter_speed * 3.7 + 100.0) - 0.5) * jitter_amount;
     }
     
     // === PIXELATION ===
@@ -278,16 +276,11 @@ void fragment() {
         tex_noise = mix(1.0, tex_noise, noise_influence);
     }
     
-    // === WOBBLE ===
-    float wobble = sin(working_uv.y * wobble_frequency + TIME * wobble_speed) * wobble_amount;
-    wobble += sin(working_uv.y * wobble_frequency * 2.3 + TIME * wobble_speed * 1.7) * wobble_amount * 0.5;
-    
     // === DIGITAL BREAKUP ===
     float breakup_offset = 0.0;
-    float total_breakup = breakup_amount + charge_instability * 0.3;
-    if (total_breakup > 0.0) {
+    if (breakup_amount > 0.0) {
         float break_noise = noise(working_uv.y * 50.0 + TIME * breakup_speed);
-        if (break_noise > (1.0 - total_breakup)) {
+        if (break_noise > (1.0 - breakup_amount)) {
             breakup_offset = (noise(working_uv.y * 100.0 + TIME * 10.0) - 0.5) * 0.15;
         }
     }
@@ -306,6 +299,13 @@ void fragment() {
     if (energy_flow_speed > 0.0) {
         float flow_wave = fract(working_uv.y - TIME * energy_flow_speed);
         energy_flow = 1.0 + energy_flow_strength * smoothstep(0.0, 0.3, flow_wave) * smoothstep(0.6, 0.3, flow_wave);
+    }
+    
+    // === WOBBLE (smooth sine wave) ===
+    float wobble = 0.0;
+    if (wobble_amount > 0.0) {
+        wobble = sin(working_uv.y * wobble_frequency + TIME * wobble_speed) * wobble_amount;
+        wobble += sin(working_uv.y * wobble_frequency * 2.3 + TIME * wobble_speed * 1.7) * wobble_amount * 0.3;
     }
     
     // === BEAM SHAPE ===

@@ -1,4 +1,4 @@
-[gd_scene load_steps=37 format=3 uid="uid://wgebkexbl2iw"]
+[gd_scene load_steps=34 format=3 uid="uid://wgebkexbl2iw"]
 
 [ext_resource type="Shader" uid="uid://mh3oc0pio21d" path="res://shaders/ion_beam.gdshader" id="1_beam"]
 [ext_resource type="Script" uid="uid://2ttpbct0ti4" path="res://scripts/ion_beam_controller.gd" id="2_controller"]
@@ -7,6 +7,7 @@
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_7dm0k"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
 ground_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+energy_multiplier = 0.0
 
 [sub_resource type="Sky" id="Sky_ig7tw"]
 sky_material = SubResource("ProceduralSkyMaterial_7dm0k")
@@ -15,13 +16,7 @@ sky_material = SubResource("ProceduralSkyMaterial_7dm0k")
 background_mode = 2
 sky = SubResource("Sky_ig7tw")
 tonemap_mode = 2
-ssr_enabled = true
-ssao_enabled = true
-ssil_enabled = true
-sdfgi_enabled = true
-glow_enabled = true
-volumetric_fog_enabled = true
-volumetric_fog_density = 0.0
+volumetric_fog_density = 0.03
 volumetric_fog_emission = Color(1, 1, 1, 1)
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_7mycd"]
@@ -54,7 +49,7 @@ shader_parameter/heat_distortion_speed = 3.0
 shader_parameter/heat_distortion_scale = 15.0
 shader_parameter/chromatic_amount = 0.0
 shader_parameter/chromatic_speed = 2.0
-shader_parameter/wobble_amount = 0.015
+shader_parameter/wobble_amount = 0.0
 shader_parameter/wobble_frequency = 12.0
 shader_parameter/wobble_speed = 8.0
 shader_parameter/pulse_amount = 0.3
@@ -78,9 +73,9 @@ shader_parameter/origin_glow_intensity = 1.5
 shader_parameter/impact_glow_size = 0.0
 shader_parameter/impact_glow_intensity = 1.5
 shader_parameter/noise_texture = SubResource("NoiseTexture2D_1bvp3")
-shader_parameter/use_noise_texture = true
-shader_parameter/noise_scale = 4.268
-shader_parameter/noise_influence = 1.0
+shader_parameter/use_noise_texture = false
+shader_parameter/noise_scale = 1.0
+shader_parameter/noise_influence = 0.5
 shader_parameter/initial_width_mult = 1.0
 shader_parameter/final_width_mult = 1.0
 shader_parameter/duration = 2.0
@@ -102,7 +97,6 @@ gradient = SubResource("Gradient_sparks")
 
 [sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_sparks"]
 lifetime_randomness = 0.3
-particle_flag_disable_z = false
 emission_shape = 1
 emission_sphere_radius = 0.15
 direction = Vector3(0, 1, 0)
@@ -110,19 +104,19 @@ spread = 35.0
 initial_velocity_min = 3.0
 initial_velocity_max = 8.0
 gravity = Vector3(0, -6, 0)
-scale_min = 0.02
-scale_max = 0.08
+scale_min = 0.099999994
+scale_max = 0.19999999
 color_ramp = SubResource("GradientTexture1D_sparks")
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_sparks"]
 transparency = 1
 shading_mode = 0
 vertex_color_use_as_albedo = true
-albedo_color = Color(0.4, 0.7, 1, 1)
-emission_enabled = true
-emission = Color(0.4, 0.7, 1, 1)
-emission_energy_multiplier = 3.0
+albedo_color = Color(0.2, 0.6, 1, 1)
 billboard_mode = 3
+particles_anim_h_frames = 1
+particles_anim_v_frames = 1
+particles_anim_loop = false
 
 [sub_resource type="QuadMesh" id="QuadMesh_spark"]
 material = SubResource("StandardMaterial3D_sparks")
@@ -241,19 +235,19 @@ tracks/8/keys = {
 tracks/9/type = "value"
 tracks/9/imported = false
 tracks/9/enabled = true
-tracks/9/path = NodePath("IonBeam:config:wobble_amount")
+tracks/9/path = NodePath("IonBeam:config:breakup_amount")
 tracks/9/interp = 1
 tracks/9/loop_wrap = true
 tracks/9/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [0.015]
+"values": [0.0]
 }
 tracks/10/type = "value"
 tracks/10/imported = false
 tracks/10/enabled = true
-tracks/10/path = NodePath("IonBeam:config:jitter_amount")
+tracks/10/path = NodePath("IonBeam:config:pixel_size")
 tracks/10/interp = 1
 tracks/10/loop_wrap = true
 tracks/10/keys = {
@@ -265,7 +259,7 @@ tracks/10/keys = {
 tracks/11/type = "value"
 tracks/11/imported = false
 tracks/11/enabled = true
-tracks/11/path = NodePath("IonBeam:config:breakup_amount")
+tracks/11/path = NodePath("IonBeam:config:energy_flow_speed")
 tracks/11/interp = 1
 tracks/11/loop_wrap = true
 tracks/11/keys = {
@@ -277,86 +271,109 @@ tracks/11/keys = {
 tracks/12/type = "value"
 tracks/12/imported = false
 tracks/12/enabled = true
-tracks/12/path = NodePath("IonBeam:config:pixel_size")
+tracks/12/path = NodePath("IonBeam:config:energy_flow_strength")
 tracks/12/interp = 1
 tracks/12/loop_wrap = true
 tracks/12/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [0.0]
+"values": [0.5]
 }
 tracks/13/type = "value"
 tracks/13/imported = false
 tracks/13/enabled = true
-tracks/13/path = NodePath("IonBeam:config:energy_flow_speed")
+tracks/13/path = NodePath("IonBeam:config:scanline_speed")
 tracks/13/interp = 1
 tracks/13/loop_wrap = true
 tracks/13/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [0.0]
+"values": [5.0]
 }
 tracks/14/type = "value"
 tracks/14/imported = false
 tracks/14/enabled = true
-tracks/14/path = NodePath("IonBeam:config:energy_flow_strength")
+tracks/14/path = NodePath("IonBeam:config:impact_glow_size")
 tracks/14/interp = 1
 tracks/14/loop_wrap = true
 tracks/14/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [0.5]
+"values": [0.0]
 }
 tracks/15/type = "value"
 tracks/15/imported = false
 tracks/15/enabled = true
-tracks/15/path = NodePath("IonBeam:config:scanline_speed")
+tracks/15/path = NodePath("IonBeam:config:impact_glow_intensity")
 tracks/15/interp = 1
 tracks/15/loop_wrap = true
 tracks/15/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [5.0]
+"values": [1.5]
 }
 tracks/16/type = "value"
 tracks/16/imported = false
 tracks/16/enabled = true
-tracks/16/path = NodePath("IonBeam:config:impact_glow_size")
+tracks/16/path = NodePath("IonBeam:transform")
 tracks/16/interp = 1
 tracks/16/loop_wrap = true
 tracks/16/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [0.0]
+"values": [Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)]
 }
-tracks/17/type = "value"
+tracks/17/type = "bezier"
 tracks/17/imported = false
 tracks/17/enabled = true
-tracks/17/path = NodePath("IonBeam:config:impact_glow_intensity")
+tracks/17/path = NodePath("IonBeam:config:wobble_amount")
 tracks/17/interp = 1
 tracks/17/loop_wrap = true
 tracks/17/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 0,
-"values": [1.5]
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
 }
 tracks/18/type = "value"
 tracks/18/imported = false
 tracks/18/enabled = true
-tracks/18/path = NodePath("IonBeam:transform")
+tracks/18/path = NodePath("IonBeam/ImpactLight:light_energy")
 tracks/18/interp = 1
 tracks/18/loop_wrap = true
 tracks/18/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 0,
-"values": [Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)]
+"values": [0.8]
+}
+tracks/19/type = "value"
+tracks/19/imported = false
+tracks/19/enabled = true
+tracks/19/path = NodePath("IonBeam/OriginLight:light_energy")
+tracks/19/interp = 1
+tracks/19/loop_wrap = true
+tracks/19/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.5]
+}
+tracks/20/type = "value"
+tracks/20/imported = false
+tracks/20/enabled = true
+tracks/20/path = NodePath("IonBeam/ImpactSparks:emitting")
+tracks/20/interp = 1
+tracks/20/loop_wrap = true
+tracks/20/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [false]
 }
 
 [sub_resource type="Animation" id="Animation_beam_sweep"]
@@ -527,14 +544,38 @@ tracks/3/keys = {
 tracks/4/type = "value"
 tracks/4/imported = false
 tracks/4/enabled = true
-tracks/4/path = NodePath("ScreenFlash/FlashRect:color")
+tracks/4/path = NodePath("IonBeam/ImpactLight:light_energy")
 tracks/4/interp = 1
 tracks/4/loop_wrap = true
 tracks/4/keys = {
-"times": PackedFloat32Array(0, 0.05, 0.3),
-"transitions": PackedFloat32Array(1, 1, 1),
+"times": PackedFloat32Array(0, 0.1, 0.3, 0.8),
+"transitions": PackedFloat32Array(0.2, 1, 1, 1),
 "update": 0,
-"values": [Color(0.8, 0.95, 1, 0), Color(0.8, 0.95, 1, 0.6), Color(0.8, 0.95, 1, 0)]
+"values": [1.5, 3.0, 2.5, 0.0]
+}
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("IonBeam/OriginLight:light_energy")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.8),
+"transitions": PackedFloat32Array(0.2, 1, 1),
+"update": 0,
+"values": [1.0, 1.5, 0.0]
+}
+tracks/6/type = "value"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("IonBeam/ImpactSparks:emitting")
+tracks/6/interp = 1
+tracks/6/loop_wrap = true
+tracks/6/keys = {
+"times": PackedFloat32Array(0, 0.7),
+"transitions": PackedFloat32Array(1, 1),
+"update": 1,
+"values": [true, false]
 }
 
 [sub_resource type="Animation" id="Animation_full_sequence"]
@@ -586,7 +627,7 @@ tracks/3/keys = {
 "times": PackedFloat32Array(0, 3, 5, 5.1, 5.5, 8),
 "transitions": PackedFloat32Array(1, 1, 1, 0.2, 1, 1),
 "update": 0,
-"values": [0.02, 0.06, 0.04, 0.5, 0.3, 0.0]
+"values": [0.02, 0.06, 0.04, 1.0, 0.3, 0.0]
 }
 tracks/4/type = "value"
 tracks/4/imported = false
@@ -624,17 +665,52 @@ tracks/6/keys = {
 "update": 0,
 "values": [0.5, 3.0, 6.0, 0.0]
 }
-tracks/7/type = "value"
+tracks/7/type = "bezier"
 tracks/7/imported = false
 tracks/7/enabled = true
-tracks/7/path = NodePath("ScreenFlash/FlashRect:color")
+tracks/7/path = NodePath("IonBeam:config:wobble_amount")
 tracks/7/interp = 1
 tracks/7/loop_wrap = true
 tracks/7/keys = {
-"times": PackedFloat32Array(0, 5, 5.1, 5.4, 8),
-"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"handle_modes": PackedInt32Array(2, 2, 0),
+"points": PackedFloat32Array(0.2, 0, 0, 1.3333334, 0, 0.01, -0.5, 0.0125, 0.8333334, -0.020833334, 0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0, 3, 8)
+}
+tracks/8/type = "value"
+tracks/8/imported = false
+tracks/8/enabled = true
+tracks/8/path = NodePath("IonBeam/ImpactLight:light_energy")
+tracks/8/interp = 1
+tracks/8/loop_wrap = true
+tracks/8/keys = {
+"times": PackedFloat32Array(0, 3, 5, 5.1, 5.5, 8),
+"transitions": PackedFloat32Array(1, 1, 1, 0.2, 1, 1),
 "update": 0,
-"values": [Color(0.8, 0.95, 1, 0), Color(0.8, 0.95, 1, 0), Color(0.8, 0.95, 1, 0.7), Color(0.8, 0.95, 1, 0), Color(0.8, 0.95, 1, 0)]
+"values": [0.0, 0.5, 1.0, 2.5, 1.5, 0.0]
+}
+tracks/9/type = "value"
+tracks/9/imported = false
+tracks/9/enabled = true
+tracks/9/path = NodePath("IonBeam/OriginLight:light_energy")
+tracks/9/interp = 1
+tracks/9/loop_wrap = true
+tracks/9/keys = {
+"times": PackedFloat32Array(0, 3, 5, 5.1, 8),
+"transitions": PackedFloat32Array(1, 1, 1, 0.2, 1),
+"update": 0,
+"values": [0.0, 0.3, 0.6, 1.2, 0.0]
+}
+tracks/10/type = "value"
+tracks/10/imported = false
+tracks/10/enabled = true
+tracks/10/path = NodePath("IonBeam/ImpactSparks:emitting")
+tracks/10/interp = 1
+tracks/10/loop_wrap = true
+tracks/10/keys = {
+"times": PackedFloat32Array(0, 3, 7.5, 8),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 1,
+"values": [false, true, true, false]
 }
 
 [sub_resource type="Animation" id="Animation_glitch"]
@@ -829,18 +905,18 @@ tracks/1/keys = {
 
 [sub_resource type="Animation" id="Animation_h2yge"]
 resource_name = "test"
+length = 5.0
 step = 1.0
-tracks/0/type = "value"
+tracks/0/type = "bezier"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("IonBeam:config:intensity")
+tracks/0/path = NodePath("IonBeam:config:charge_level")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
-"times": PackedFloat32Array(0, 1),
-"transitions": PackedFloat32Array(1, 1),
-"update": 0,
-"values": [0.5, 3.0]
+"handle_modes": PackedInt32Array(0, 0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0, 1, -0.8333334, 0, 0, 0),
+"times": PackedFloat32Array(0, 1)
 }
 
 [sub_resource type="Animation" id="Animation_unstable"]
@@ -862,22 +938,10 @@ tracks/0/keys = {
 tracks/1/type = "value"
 tracks/1/imported = false
 tracks/1/enabled = true
-tracks/1/path = NodePath("IonBeam:config:wobble_amount")
+tracks/1/path = NodePath("IonBeam:config:breakup_amount")
 tracks/1/interp = 1
 tracks/1/loop_wrap = true
 tracks/1/keys = {
-"times": PackedFloat32Array(0, 1, 2, 3, 4),
-"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
-"update": 0,
-"values": [0.02, 0.08, 0.03, 0.1, 0.02]
-}
-tracks/2/type = "value"
-tracks/2/imported = false
-tracks/2/enabled = true
-tracks/2/path = NodePath("IonBeam:config:breakup_amount")
-tracks/2/interp = 1
-tracks/2/loop_wrap = true
-tracks/2/keys = {
 "times": PackedFloat32Array(0, 2, 4),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
@@ -973,26 +1037,21 @@ config = ExtResource("3_config")
 [node name="ImpactLight" type="OmniLight3D" parent="IonBeam"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -4.9, 0)
 light_color = Color(0.2, 0.6, 1, 1)
-light_energy = 1.5
-light_indirect_energy = 0.5
+light_energy = 0.8
 light_volumetric_fog_energy = 2.0
 shadow_enabled = true
-omni_range = 3.5
-omni_attenuation = 7.394
+omni_range = 3.0
 
 [node name="OriginLight" type="OmniLight3D" parent="IonBeam"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)
 light_color = Color(0.2, 0.6, 1, 1)
-light_energy = 0.9
-light_indirect_energy = 0.3
-light_volumetric_fog_energy = 1.5
-omni_range = 2.4
+light_energy = 0.5
+omni_range = 2.0
 omni_attenuation = 1.218
 
 [node name="ImpactSparks" type="GPUParticles3D" parent="IonBeam"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -5, 0)
-emitting = true
-amount = 32
+amount = 218
 lifetime = 0.8
 visibility_aabb = AABB(-2, -1, -2, 4, 4, 4)
 process_material = SubResource("ParticleProcessMaterial_sparks")
@@ -1005,12 +1064,3 @@ libraries = {
 
 [node name="ScreenFlash" type="CanvasLayer" parent="."]
 layer = 100
-
-[node name="FlashRect" type="ColorRect" parent="ScreenFlash"]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-color = Color(0.8, 0.95, 1, 0)

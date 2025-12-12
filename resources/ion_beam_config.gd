@@ -123,7 +123,7 @@ signal config_changed
 
 # === WOBBLE ===
 @export_group("Wobble")
-@export_range(0.0, 0.2) var wobble_amount: float = 0.015:
+@export_range(0.0, 0.5) var wobble_amount: float = 0.0:
 	set(value):
 		wobble_amount = value
 		emit_changed()

@@ -46,8 +46,15 @@ A targeting laser effect using a `QuadMesh` billboard with `spatial` shader:
 
 **Architecture Pattern:**
 - [resources/ion_beam_config.gd](../resources/ion_beam_config.gd) - `@tool` Resource for live editor preview
-- [scripts/ion_beam_controller.gd](../scripts/ion_beam_controller.gd) - `@tool` controller applies config to material and syncs lights/particles
+- [scripts/ion_beam_controller.gd](../scripts/ion_beam_controller.gd) - `@tool` controller applies config to material only
 - [resources/default_beam.tres](../resources/default_beam.tres) - Saved preset (duplicate for variants)
+
+**Control Hierarchy:**
+1. **Shader** - Visual rendering via uniforms (beam shape, color, effects)
+2. **AnimationPlayer** - Animates config properties, lights, and particles over time
+3. **Controller Script** - Applies config resource to shader material
+
+Lights and particles are controlled explicitly via AnimationPlayer tracks (not reactively by script).
 
 Applied to a vertical `QuadMesh` (1x10 units, orientation=2) positioned at Y=5.
 
