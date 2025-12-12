@@ -4,6 +4,10 @@ shader_type spatial;
 // Uses a QuadMesh billboard for best visual control
 render_mode unshaded, cull_disabled, depth_draw_opaque;
 
+// === CHARGE SYSTEM (Master Control) ===
+uniform float charge_level : hint_range(0.0, 1.0) = 1.0; // 0=off, 1=full power
+uniform bool use_charge_level = false; // When true, charge_level controls intensity/width/instability
+
 // === APPEARANCE ===
 uniform vec3 beam_color : source_color = vec3(0.2, 0.6, 1.0);
 uniform vec3 core_color : source_color = vec3(0.8, 0.95, 1.0);
@@ -11,6 +15,15 @@ uniform float intensity : hint_range(0.5, 10.0) = 3.0;
 uniform float beam_width : hint_range(0.01, 1.0) = 0.08;
 uniform float core_width : hint_range(0.0, 1.0) = 0.3; // Ratio of beam_width
 uniform float edge_softness : hint_range(0.0, 1.0) = 0.5;
+
+// === SECONDARY GLOW ===
+uniform float outer_glow_size : hint_range(0.0, 5.0) = 2.0;
+uniform float outer_glow_intensity : hint_range(0.0, 1.0) = 0.3;
+uniform vec3 outer_glow_color : source_color = vec3(0.1, 0.3, 0.8);
+
+// === CHROMATIC ABERRATION ===
+uniform float chromatic_amount : hint_range(0.0, 0.1) = 0.0;
+uniform float chromatic_speed : hint_range(0.0, 10.0) = 2.0;
 
 // === EFFECTS ===
 // Wobble - lateral displacement along the beam
@@ -37,8 +50,28 @@ uniform float breakup_amount : hint_range(0.0, 1.0) = 0.0;
 uniform float breakup_speed : hint_range(0.0, 10.0) = 2.0;
 
 // Taper - beam gets thinner at ends
-uniform float taper_top : hint_range(0.0, 0.5) = 0.05;
+uniform float taper_top : hint_range(0.0, 0.5) = 0.0;
 uniform float taper_bottom : hint_range(0.0, 0.5) = 0.0;
+
+// === ENERGY BUILDUP ===
+uniform float energy_flow_speed : hint_range(0.0, 10.0) = 0.0; // 0=disabled, energy flows bottom to top
+uniform float energy_flow_strength : hint_range(0.0, 1.0) = 0.5;
+
+// === INSTABILITY / JITTER ===
+uniform float jitter_amount : hint_range(0.0, 0.1) = 0.0;
+uniform float jitter_speed : hint_range(0.0, 50.0) = 20.0;
+
+// === ENDPOINT EFFECTS ===
+uniform float origin_glow_size : hint_range(0.0, 0.3) = 0.0; // Glow at top (origin)
+uniform float origin_glow_intensity : hint_range(0.0, 3.0) = 1.5;
+uniform float impact_glow_size : hint_range(0.0, 0.3) = 0.0; // Glow at bottom (impact)
+uniform float impact_glow_intensity : hint_range(0.0, 3.0) = 1.5;
+
+// === NOISE TEXTURE ===
+uniform sampler2D noise_texture : hint_default_white;
+uniform bool use_noise_texture = false;
+uniform float noise_scale : hint_range(0.1, 10.0) = 1.0;
+uniform float noise_influence : hint_range(0.0, 1.0) = 0.5;
 
 // === ANIMATION (width collapse/expand) ===
 uniform float initial_width_mult : hint_range(0.0, 5.0) = 1.0;
@@ -54,10 +87,25 @@ float hash(float n) {
     return fract(sin(n) * 43758.5453123);
 }
 
+float hash2(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+}
+
 float noise(float x) {
     float i = floor(x);
     float f = fract(x);
     return mix(hash(i), hash(i + 1.0), smoothstep(0.0, 1.0, f));
+}
+
+float noise2d(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(
+        mix(hash2(i), hash2(i + vec2(1.0, 0.0)), f.x),
+        mix(hash2(i + vec2(0.0, 1.0)), hash2(i + vec2(1.0, 1.0)), f.x),
+        f.y
+    );
 }
 
 float bounce_out(float t) {
@@ -111,9 +159,23 @@ float apply_easing(float t, int tween, int trans) {
     return t;
 }
 
+// Calculate beam shape for a given center offset (used for chromatic aberration)
+float calc_beam(vec2 uv, float center, float current_width, float softness) {
+    float dist = abs(uv.x - center);
+    float half_w = current_width * 0.5;
+    float edge = half_w * (1.0 - softness);
+    return 1.0 - smoothstep(edge, half_w, dist);
+}
+
 void fragment() {
     // UV: x = horizontal (across beam width), y = vertical (along beam length, 0=bottom, 1=top)
     vec2 uv = UV;
+    
+    // === CHARGE LEVEL INFLUENCE ===
+    float effective_charge = use_charge_level ? charge_level : 1.0;
+    float charge_intensity_mult = mix(0.3, 1.0, effective_charge);
+    float charge_width_mult = mix(0.5, 1.0, effective_charge);
+    float charge_instability = use_charge_level ? (1.0 - effective_charge) * 0.5 : 0.0;
     
     // === ANIMATION PROGRESS ===
     float raw_time = TIME / duration;
@@ -130,10 +192,26 @@ void fragment() {
     float eased = apply_easing(progress, tween_type, trans_type);
     float width_mult = mix(initial_width_mult, final_width_mult, eased);
     
+    // === JITTER ===
+    float jitter = 0.0;
+    float total_jitter = jitter_amount + charge_instability;
+    if (total_jitter > 0.0) {
+        jitter = (noise(TIME * jitter_speed) - 0.5) * total_jitter * 2.0;
+        jitter += (noise(TIME * jitter_speed * 3.7 + 100.0) - 0.5) * total_jitter;
+    }
+    
     // === PIXELATION ===
     vec2 working_uv = uv;
     if (pixel_size > 0.0) {
         working_uv = floor(uv / pixel_size) * pixel_size + pixel_size * 0.5;
+    }
+    
+    // === NOISE TEXTURE SAMPLING ===
+    float tex_noise = 1.0;
+    if (use_noise_texture) {
+        vec2 noise_uv = working_uv * noise_scale + vec2(TIME * 0.1, TIME * 0.2);
+        tex_noise = texture(noise_texture, noise_uv).r;
+        tex_noise = mix(1.0, tex_noise, noise_influence);
     }
     
     // === WOBBLE ===
@@ -142,9 +220,10 @@ void fragment() {
     
     // === DIGITAL BREAKUP ===
     float breakup_offset = 0.0;
-    if (breakup_amount > 0.0) {
+    float total_breakup = breakup_amount + charge_instability * 0.3;
+    if (total_breakup > 0.0) {
         float break_noise = noise(working_uv.y * 50.0 + TIME * breakup_speed);
-        if (break_noise > (1.0 - breakup_amount)) {
+        if (break_noise > (1.0 - total_breakup)) {
             breakup_offset = (noise(working_uv.y * 100.0 + TIME * 10.0) - 0.5) * 0.15;
         }
     }
@@ -158,9 +237,16 @@ void fragment() {
         taper *= smoothstep(0.0, taper_bottom, working_uv.y);
     }
     
+    // === ENERGY FLOW (bottom to top buildup) ===
+    float energy_flow = 1.0;
+    if (energy_flow_speed > 0.0) {
+        float flow_wave = fract(working_uv.y - TIME * energy_flow_speed);
+        energy_flow = 1.0 + energy_flow_strength * smoothstep(0.0, 0.3, flow_wave) * smoothstep(0.6, 0.3, flow_wave);
+    }
+    
     // === BEAM SHAPE ===
-    float current_width = beam_width * width_mult * taper;
-    float center = 0.5 + wobble + breakup_offset;
+    float current_width = beam_width * width_mult * taper * charge_width_mult;
+    float center = 0.5 + wobble + breakup_offset + jitter;
     float dist_from_center = abs(working_uv.x - center);
     
     // Soft edge falloff
@@ -170,6 +256,38 @@ void fragment() {
     
     // Core (brighter center line)
     float core = 1.0 - smoothstep(0.0, half_width * core_width, dist_from_center);
+    
+    // === CHROMATIC ABERRATION ===
+    vec3 chroma_color = vec3(0.0);
+    float chroma_beam = beam;
+    if (chromatic_amount > 0.0) {
+        float chroma_offset = chromatic_amount * sin(TIME * chromatic_speed);
+        float beam_r = calc_beam(working_uv, center - chroma_offset, current_width, edge_softness);
+        float beam_g = calc_beam(working_uv, center, current_width, edge_softness);
+        float beam_b = calc_beam(working_uv, center + chroma_offset, current_width, edge_softness);
+        chroma_beam = max(max(beam_r, beam_g), beam_b);
+        chroma_color = vec3(beam_r, beam_g, beam_b);
+    }
+    
+    // === OUTER GLOW ===
+    float outer_glow = 0.0;
+    if (outer_glow_size > 0.0) {
+        float glow_width = half_width * outer_glow_size;
+        outer_glow = exp(-dist_from_center * 3.0 / max(glow_width, 0.001)) * outer_glow_intensity;
+    }
+    
+    // === ENDPOINT EFFECTS ===
+    float origin_effect = 0.0;
+    if (origin_glow_size > 0.0) {
+        float origin_dist = 1.0 - working_uv.y; // Distance from top
+        origin_effect = smoothstep(origin_glow_size, 0.0, origin_dist) * origin_glow_intensity;
+    }
+    
+    float impact_effect = 0.0;
+    if (impact_glow_size > 0.0) {
+        float impact_dist = working_uv.y; // Distance from bottom
+        impact_effect = smoothstep(impact_glow_size, 0.0, impact_dist) * impact_glow_intensity;
+    }
     
     // === SCANLINES ===
     float scanline = 1.0;
@@ -183,18 +301,33 @@ void fragment() {
     
     // === FLICKER ===
     float flicker = 1.0 - flicker_amount * noise(TIME * flicker_speed);
+    flicker *= tex_noise; // Apply noise texture
     
     // === COMBINE ===
-    float final_intensity = intensity * pulse * flicker * scanline;
+    float final_intensity = intensity * pulse * flicker * scanline * energy_flow * charge_intensity_mult;
     
     // Mix core color and beam color based on distance from center
     vec3 color = mix(beam_color, core_color, core * core);
     
-    // Add slight glow halo beyond the main beam
+    // Apply chromatic aberration
+    if (chromatic_amount > 0.0) {
+        color *= chroma_color;
+    }
+    
+    // Add endpoint effects to color
+    color += core_color * (origin_effect + impact_effect) * 0.5;
+    
+    // Add outer glow
+    vec3 final_color = color * final_intensity;
+    final_color += outer_glow_color * outer_glow * final_intensity * 0.5;
+    
+    // Calculate final alpha
+    float main_beam = chromatic_amount > 0.0 ? chroma_beam : beam;
     float halo = exp(-dist_from_center * 15.0 / max(current_width, 0.001)) * 0.3;
+    float final_alpha = max(main_beam, max(halo, outer_glow)) * smoothstep(0.0, 0.1, width_mult);
+    final_alpha = max(final_alpha, (origin_effect + impact_effect) * 0.5);
+    final_alpha *= effective_charge; // Fade with charge
     
-    float final_alpha = max(beam, halo) * smoothstep(0.0, 0.1, width_mult);
-    
-    ALBEDO = color * final_intensity;
+    ALBEDO = final_color;
     ALPHA = final_alpha;
 }

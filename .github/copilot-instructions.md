@@ -21,12 +21,19 @@ A targeting laser effect using a `QuadMesh` billboard with `spatial` shader:
 **Effect Parameters:**
 | Category | Parameters |
 |----------|------------|
+| Charge System | `charge_level`, `use_charge_level` (master control for intensity/width/instability) |
 | Appearance | `beam_color`, `core_color`, `intensity`, `beam_width`, `core_width`, `edge_softness` |
+| Secondary Glow | `outer_glow_size`, `outer_glow_intensity`, `outer_glow_color` |
+| Chromatic Aberration | `chromatic_amount`, `chromatic_speed` |
 | Wobble | `wobble_amount`, `wobble_frequency`, `wobble_speed` |
 | Pulse/Flicker | `pulse_amount`, `pulse_speed`, `flicker_amount`, `flicker_speed` |
 | Scanlines | `scanline_density`, `scanline_speed`, `scanline_strength` |
 | Digital FX | `pixel_size`, `breakup_amount`, `breakup_speed` |
 | Taper | `taper_top`, `taper_bottom` |
+| Energy Buildup | `energy_flow_speed`, `energy_flow_strength` |
+| Instability | `jitter_amount`, `jitter_speed` |
+| Endpoint Effects | `origin_glow_size`, `origin_glow_intensity`, `impact_glow_size`, `impact_glow_intensity` |
+| Noise Texture | `noise_texture`, `use_noise_texture`, `noise_scale`, `noise_influence` |
 | Animation | `initial_width_mult`, `final_width_mult`, `duration`, `loop_animation`, `ping_pong` |
 | Easing | `tween_type` (0-8), `trans_type` (0-2) |
 
