@@ -37,6 +37,9 @@ func _compute_config_hash() -> int:
 		return 0
 	# Simple hash of all config values
 	var h := hash(config.billboard_enabled)
+	h ^= hash(config.fresnel_power)
+	h ^= hash(config.fresnel_intensity)
+	h ^= hash(config.fresnel_enabled)
 	h ^= hash(config.charge_level)
 	h ^= hash(config.use_charge_level)
 	h ^= hash(config.beam_color)

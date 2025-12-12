@@ -23,6 +23,7 @@ A targeting laser effect using a `QuadMesh` billboard with `spatial` shader:
 |----------|------------|
 | Charge System | `charge_level`, `use_charge_level` (master control for intensity/width/instability) |
 | Appearance | `beam_color`, `core_color`, `intensity`, `beam_width`, `core_width`, `edge_softness` |
+| Fresnel (Cylindrical) | `fresnel_enabled`, `fresnel_power`, `fresnel_intensity` |
 | Secondary Glow | `outer_glow_size`, `outer_glow_intensity`, `outer_glow_color` |
 | Heat Distortion | `heat_distortion_amount`, `heat_distortion_speed`, `heat_distortion_scale` |
 | Chromatic Aberration | `chromatic_amount`, `chromatic_speed` |

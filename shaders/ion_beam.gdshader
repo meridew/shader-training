@@ -7,10 +7,16 @@ render_mode unshaded, cull_disabled, depth_draw_opaque;
 // === BILLBOARD ===
 uniform bool billboard_enabled = true; // Rotate to face camera around Y axis
 
+// === FRESNEL (Cylindrical depth simulation) ===
+uniform float fresnel_power : hint_range(0.0, 5.0) = 2.0; // Higher = sharper edge
+uniform float fresnel_intensity : hint_range(0.0, 2.0) = 0.5; // Edge brightness boost
+uniform bool fresnel_enabled = true;
+
 // === SCREEN TEXTURE FOR HEAT DISTORTION ===
 uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
 
 varying vec3 world_vertex;
+varying vec3 world_normal;
 
 // === CHARGE SYSTEM (Master Control) ===
 uniform float charge_level : hint_range(0.0, 1.0) = 1.0; // 0=off, 1=full power
@@ -206,6 +212,8 @@ void vertex() {
     }
     
     world_vertex = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+    // Pass normal for Fresnel calculation (quad faces along local Z after any rotation)
+    world_normal = mat3(MODEL_MATRIX) * vec3(0.0, 0.0, 1.0);
 }
 
 void fragment() {
@@ -398,6 +406,18 @@ void fragment() {
         // Heat distortion shows in areas around the beam but not covered by it
         float heat_visibility = heat_mask * (1.0 - final_alpha);
         final_color = mix(final_color, heat_bg + final_color * final_alpha, heat_visibility * 0.5);
+    }
+    
+    // === FRESNEL (Cylindrical depth simulation) ===
+    // Makes edges brighter when viewed at grazing angles, simulating a rounded surface
+    if (fresnel_enabled && final_alpha > 0.0) {
+        vec3 view_dir = normalize(world_vertex - INV_VIEW_MATRIX[3].xyz);
+        vec3 normal = normalize(world_normal);
+        float fresnel = pow(1.0 - abs(dot(view_dir, normal)), fresnel_power);
+        // Boost color at edges (creates perception of cylindrical curvature)
+        final_color += core_color * fresnel * fresnel_intensity * final_intensity;
+        // Also slightly boost alpha at edges for more visible edge glow
+        final_alpha = min(1.0, final_alpha + fresnel * fresnel_intensity * 0.2);
     }
     
     ALBEDO = final_color;

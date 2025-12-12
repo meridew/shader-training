@@ -15,6 +15,26 @@ signal config_changed
 		emit_changed()
 		config_changed.emit()
 
+# === FRESNEL (Cylindrical Depth) ===
+@export_group("Fresnel")
+@export_range(0.0, 5.0) var fresnel_power: float = 2.0:
+	set(value):
+		fresnel_power = value
+		emit_changed()
+		config_changed.emit()
+
+@export_range(0.0, 2.0) var fresnel_intensity: float = 0.5:
+	set(value):
+		fresnel_intensity = value
+		emit_changed()
+		config_changed.emit()
+
+@export var fresnel_enabled: bool = true:
+	set(value):
+		fresnel_enabled = value
+		emit_changed()
+		config_changed.emit()
+
 # === CHARGE SYSTEM (Master Control) ===
 @export_group("Charge System")
 @export_range(0.0, 1.0) var charge_level: float = 1.0:
@@ -356,6 +376,10 @@ func apply_to_material(material: ShaderMaterial) -> void:
 		return
 	# Billboard
 	material.set_shader_parameter("billboard_enabled", billboard_enabled)
+	# Fresnel
+	material.set_shader_parameter("fresnel_power", fresnel_power)
+	material.set_shader_parameter("fresnel_intensity", fresnel_intensity)
+	material.set_shader_parameter("fresnel_enabled", fresnel_enabled)
 	# Charge System
 	material.set_shader_parameter("charge_level", charge_level)
 	material.set_shader_parameter("use_charge_level", use_charge_level)

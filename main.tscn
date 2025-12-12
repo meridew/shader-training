@@ -1434,6 +1434,10 @@ mesh = SubResource("QuadMesh_beam")
 script = ExtResource("2_controller")
 config = ExtResource("3_config")
 
+[node name="CrossQuad" type="MeshInstance3D" parent="IonBeam"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 0, 0)
+mesh = SubResource("QuadMesh_beam")
+
 [node name="ImpactLight" type="OmniLight3D" parent="IonBeam"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -4.9, 0)
 light_color = Color(0.2, 0.6, 1, 1)
