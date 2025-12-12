@@ -7,6 +7,9 @@ render_mode unshaded, cull_disabled, depth_draw_opaque;
 // === BILLBOARD ===
 uniform bool billboard_enabled = true; // Rotate to face camera around Y axis
 
+// === SCREEN TEXTURE FOR HEAT DISTORTION ===
+uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
+
 varying vec3 world_vertex;
 
 // === CHARGE SYSTEM (Master Control) ===
@@ -25,6 +28,11 @@ uniform float edge_softness : hint_range(0.0, 1.0) = 0.5;
 uniform float outer_glow_size : hint_range(0.0, 5.0) = 2.0;
 uniform float outer_glow_intensity : hint_range(0.0, 1.0) = 0.3;
 uniform vec3 outer_glow_color : source_color = vec3(0.1, 0.3, 0.8);
+
+// === HEAT DISTORTION ===
+uniform float heat_distortion_amount : hint_range(0.0, 0.1) = 0.0;
+uniform float heat_distortion_speed : hint_range(0.0, 10.0) = 3.0;
+uniform float heat_distortion_scale : hint_range(1.0, 50.0) = 15.0;
 
 // === CHROMATIC ABERRATION ===
 uniform float chromatic_amount : hint_range(0.0, 0.1) = 0.0;
@@ -204,6 +212,29 @@ void fragment() {
     // UV: x = horizontal (across beam width), y = vertical (along beam length, 0=bottom, 1=top)
     vec2 uv = UV;
     
+    // === HEAT DISTORTION (applied to background) ===
+    vec3 heat_bg = vec3(0.0);
+    float heat_mask = 0.0;
+    if (heat_distortion_amount > 0.0) {
+        // Calculate distortion based on distance from beam center and noise
+        float dist_from_beam = abs(uv.x - 0.5);
+        float heat_falloff = exp(-dist_from_beam * 8.0);
+        
+        // Animated noise for organic distortion
+        float heat_noise1 = noise2d(vec2(uv.y * heat_distortion_scale, TIME * heat_distortion_speed));
+        float heat_noise2 = noise2d(vec2(uv.y * heat_distortion_scale * 0.5 + 100.0, TIME * heat_distortion_speed * 0.7));
+        
+        vec2 distort_offset = vec2(
+            (heat_noise1 - 0.5) * heat_distortion_amount * heat_falloff,
+            (heat_noise2 - 0.5) * heat_distortion_amount * 0.5 * heat_falloff
+        );
+        
+        // Sample screen with distortion
+        vec2 distorted_screen_uv = SCREEN_UV + distort_offset;
+        heat_bg = texture(screen_texture, distorted_screen_uv).rgb;
+        heat_mask = heat_falloff * heat_distortion_amount * 10.0;
+    }
+    
     // === CHARGE LEVEL INFLUENCE ===
     float effective_charge = use_charge_level ? charge_level : 1.0;
     float charge_intensity_mult = mix(0.3, 1.0, effective_charge);
@@ -360,6 +391,14 @@ void fragment() {
     float final_alpha = max(main_beam, max(halo, outer_glow)) * smoothstep(0.0, 0.1, width_mult);
     final_alpha = max(final_alpha, (origin_effect + impact_effect) * 0.5);
     final_alpha *= effective_charge; // Fade with charge
+    
+    // === APPLY HEAT DISTORTION ===
+    // Blend distorted background where the heat haze is visible but beam isn't
+    if (heat_distortion_amount > 0.0 && heat_mask > 0.0) {
+        // Heat distortion shows in areas around the beam but not covered by it
+        float heat_visibility = heat_mask * (1.0 - final_alpha);
+        final_color = mix(final_color, heat_bg + final_color * final_alpha, heat_visibility * 0.5);
+    }
     
     ALBEDO = final_color;
     ALPHA = final_alpha;

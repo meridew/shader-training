@@ -24,6 +24,7 @@ A targeting laser effect using a `QuadMesh` billboard with `spatial` shader:
 | Charge System | `charge_level`, `use_charge_level` (master control for intensity/width/instability) |
 | Appearance | `beam_color`, `core_color`, `intensity`, `beam_width`, `core_width`, `edge_softness` |
 | Secondary Glow | `outer_glow_size`, `outer_glow_intensity`, `outer_glow_color` |
+| Heat Distortion | `heat_distortion_amount`, `heat_distortion_speed`, `heat_distortion_scale` |
 | Chromatic Aberration | `chromatic_amount`, `chromatic_speed` |
 | Wobble | `wobble_amount`, `wobble_frequency`, `wobble_speed` |
 | Pulse/Flicker | `pulse_amount`, `pulse_speed`, `flicker_amount`, `flicker_speed` |
@@ -37,9 +38,15 @@ A targeting laser effect using a `QuadMesh` billboard with `spatial` shader:
 | Animation | `initial_width_mult`, `final_width_mult`, `duration`, `loop_animation`, `ping_pong` |
 | Easing | `tween_type` (0-8), `trans_type` (0-2) |
 
+**Scene-Level VFX:**
+- **ImpactLight** - OmniLight3D at beam bottom, syncs color/intensity with beam config
+- **OriginLight** - OmniLight3D at beam top, syncs color/intensity with beam config  
+- **ImpactSparks** - GPUParticles3D at impact point, emits upward sparks matching beam color
+- **ScreenFlash** - CanvasLayer with ColorRect for white flash on fire animations
+
 **Architecture Pattern:**
 - [resources/ion_beam_config.gd](../resources/ion_beam_config.gd) - `@tool` Resource for live editor preview
-- [scripts/ion_beam_controller.gd](../scripts/ion_beam_controller.gd) - `@tool` controller applies config to material
+- [scripts/ion_beam_controller.gd](../scripts/ion_beam_controller.gd) - `@tool` controller applies config to material and syncs lights/particles
 - [resources/default_beam.tres](../resources/default_beam.tres) - Saved preset (duplicate for variants)
 
 Applied to a vertical `QuadMesh` (1x10 units, orientation=2) positioned at Y=5.

@@ -48,6 +48,9 @@ func _compute_config_hash() -> int:
 	h ^= hash(config.outer_glow_size)
 	h ^= hash(config.outer_glow_intensity)
 	h ^= hash(config.outer_glow_color)
+	h ^= hash(config.heat_distortion_amount)
+	h ^= hash(config.heat_distortion_speed)
+	h ^= hash(config.heat_distortion_scale)
 	h ^= hash(config.chromatic_amount)
 	h ^= hash(config.chromatic_speed)
 	h ^= hash(config.wobble_amount)
@@ -136,3 +139,21 @@ func _sync_lights() -> void:
 		origin_light.light_energy = origin_energy
 		origin_light.omni_range = 2.4 * clampf(intensity_scale, 0.5, 1.5)
 		origin_light.visible = effective_intensity > 0.1
+	
+	# Impact sparks - sync with beam intensity and impact glow
+	var impact_sparks := get_node_or_null("ImpactSparks") as GPUParticles3D
+	if impact_sparks:
+		# Only emit when beam is visible
+		impact_sparks.emitting = effective_intensity > 0.5
+		# Scale particle amount and speed with intensity
+		var spark_material := impact_sparks.process_material as ParticleProcessMaterial
+		if spark_material:
+			spark_material.initial_velocity_min = 3.0 * intensity_scale
+			spark_material.initial_velocity_max = 8.0 * intensity_scale
+		# Update spark color to match beam
+		var spark_mesh := impact_sparks.draw_pass_1 as QuadMesh
+		if spark_mesh:
+			var spark_mat := spark_mesh.material as StandardMaterial3D
+			if spark_mat:
+				spark_mat.albedo_color = config.beam_color
+				spark_mat.emission = config.beam_color

@@ -87,6 +87,26 @@ signal config_changed
 		emit_changed()
 		config_changed.emit()
 
+# === HEAT DISTORTION ===
+@export_group("Heat Distortion")
+@export_range(0.0, 0.1) var heat_distortion_amount: float = 0.0:
+	set(value):
+		heat_distortion_amount = value
+		emit_changed()
+		config_changed.emit()
+
+@export_range(0.0, 10.0) var heat_distortion_speed: float = 3.0:
+	set(value):
+		heat_distortion_speed = value
+		emit_changed()
+		config_changed.emit()
+
+@export_range(1.0, 50.0) var heat_distortion_scale: float = 15.0:
+	set(value):
+		heat_distortion_scale = value
+		emit_changed()
+		config_changed.emit()
+
 # === CHROMATIC ABERRATION ===
 @export_group("Chromatic Aberration")
 @export_range(0.0, 0.1) var chromatic_amount: float = 0.0:
@@ -350,6 +370,10 @@ func apply_to_material(material: ShaderMaterial) -> void:
 	material.set_shader_parameter("outer_glow_size", outer_glow_size)
 	material.set_shader_parameter("outer_glow_intensity", outer_glow_intensity)
 	material.set_shader_parameter("outer_glow_color", Vector3(outer_glow_color.r, outer_glow_color.g, outer_glow_color.b))
+	# Heat Distortion
+	material.set_shader_parameter("heat_distortion_amount", heat_distortion_amount)
+	material.set_shader_parameter("heat_distortion_speed", heat_distortion_speed)
+	material.set_shader_parameter("heat_distortion_scale", heat_distortion_scale)
 	# Chromatic Aberration
 	material.set_shader_parameter("chromatic_amount", chromatic_amount)
 	material.set_shader_parameter("chromatic_speed", chromatic_speed)

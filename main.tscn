@@ -1,4 +1,4 @@
-[gd_scene load_steps=30 format=3 uid="uid://wgebkexbl2iw"]
+[gd_scene load_steps=37 format=3 uid="uid://wgebkexbl2iw"]
 
 [ext_resource type="Shader" uid="uid://mh3oc0pio21d" path="res://shaders/ion_beam.gdshader" id="1_beam"]
 [ext_resource type="Script" uid="uid://2ttpbct0ti4" path="res://scripts/ion_beam_controller.gd" id="2_controller"]
@@ -15,28 +15,24 @@ sky_material = SubResource("ProceduralSkyMaterial_7dm0k")
 background_mode = 2
 sky = SubResource("Sky_ig7tw")
 tonemap_mode = 2
+ssr_enabled = true
+ssao_enabled = true
+ssil_enabled = true
+sdfgi_enabled = true
 glow_enabled = true
 volumetric_fog_enabled = true
 volumetric_fog_density = 0.0
 volumetric_fog_emission = Color(1, 1, 1, 1)
 
+[sub_resource type="PlaneMesh" id="PlaneMesh_7mycd"]
+size = Vector2(10000, 10000)
+
+[sub_resource type="WorldBoundaryShape3D" id="WorldBoundaryShape3D_7dm0k"]
+
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_h2yge"]
-noise_type = 2
-frequency = 0.0204
 
 [sub_resource type="NoiseTexture2D" id="NoiseTexture2D_1bvp3"]
 noise = SubResource("FastNoiseLite_h2yge")
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_lquwl"]
-albedo_color = Color(0.34407577, 0.34407574, 0.34407574, 1)
-detail_enabled = true
-detail_mask = SubResource("NoiseTexture2D_1bvp3")
-
-[sub_resource type="PlaneMesh" id="PlaneMesh_7mycd"]
-material = SubResource("StandardMaterial3D_lquwl")
-size = Vector2(10, 10)
-
-[sub_resource type="WorldBoundaryShape3D" id="WorldBoundaryShape3D_7dm0k"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_beam"]
 render_priority = 1
@@ -53,6 +49,9 @@ shader_parameter/edge_softness = 0.5
 shader_parameter/outer_glow_size = 2.0
 shader_parameter/outer_glow_intensity = 0.3
 shader_parameter/outer_glow_color = Color(0.1, 0.3, 0.8, 1)
+shader_parameter/heat_distortion_amount = 0.0
+shader_parameter/heat_distortion_speed = 3.0
+shader_parameter/heat_distortion_scale = 15.0
 shader_parameter/chromatic_amount = 0.0
 shader_parameter/chromatic_speed = 2.0
 shader_parameter/wobble_amount = 0.015
@@ -78,9 +77,10 @@ shader_parameter/origin_glow_size = 0.0
 shader_parameter/origin_glow_intensity = 1.5
 shader_parameter/impact_glow_size = 0.0
 shader_parameter/impact_glow_intensity = 1.5
-shader_parameter/use_noise_texture = false
-shader_parameter/noise_scale = 1.0
-shader_parameter/noise_influence = 0.5
+shader_parameter/noise_texture = SubResource("NoiseTexture2D_1bvp3")
+shader_parameter/use_noise_texture = true
+shader_parameter/noise_scale = 4.268
+shader_parameter/noise_influence = 1.0
 shader_parameter/initial_width_mult = 1.0
 shader_parameter/final_width_mult = 1.0
 shader_parameter/duration = 2.0
@@ -92,6 +92,41 @@ shader_parameter/trans_type = 0
 [sub_resource type="QuadMesh" id="QuadMesh_beam"]
 material = SubResource("ShaderMaterial_beam")
 size = Vector2(1, 10)
+
+[sub_resource type="Gradient" id="Gradient_sparks"]
+offsets = PackedFloat32Array(0, 0.3, 0.7, 1)
+colors = PackedColorArray(1, 1, 1, 1, 0.4, 0.7, 1, 1, 0.2, 0.5, 1, 0.8, 0.1, 0.2, 0.8, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_sparks"]
+gradient = SubResource("Gradient_sparks")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_sparks"]
+lifetime_randomness = 0.3
+particle_flag_disable_z = false
+emission_shape = 1
+emission_sphere_radius = 0.15
+direction = Vector3(0, 1, 0)
+spread = 35.0
+initial_velocity_min = 3.0
+initial_velocity_max = 8.0
+gravity = Vector3(0, -6, 0)
+scale_min = 0.02
+scale_max = 0.08
+color_ramp = SubResource("GradientTexture1D_sparks")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_sparks"]
+transparency = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.4, 0.7, 1, 1)
+emission_enabled = true
+emission = Color(0.4, 0.7, 1, 1)
+emission_energy_multiplier = 3.0
+billboard_mode = 3
+
+[sub_resource type="QuadMesh" id="QuadMesh_spark"]
+material = SubResource("StandardMaterial3D_sparks")
+size = Vector2(0.1, 0.1)
 
 [sub_resource type="Animation" id="Animation_1bvp3"]
 length = 0.001
@@ -489,6 +524,18 @@ tracks/3/keys = {
 "update": 0,
 "values": [2.5, 3.0, 0.0]
 }
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("ScreenFlash/FlashRect:color")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0, 0.05, 0.3),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Color(0.8, 0.95, 1, 0), Color(0.8, 0.95, 1, 0.6), Color(0.8, 0.95, 1, 0)]
+}
 
 [sub_resource type="Animation" id="Animation_full_sequence"]
 resource_name = "full_sequence"
@@ -576,6 +623,18 @@ tracks/6/keys = {
 "transitions": PackedFloat32Array(1, 1, 1, 1),
 "update": 0,
 "values": [0.5, 3.0, 6.0, 0.0]
+}
+tracks/7/type = "value"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath("ScreenFlash/FlashRect:color")
+tracks/7/interp = 1
+tracks/7/loop_wrap = true
+tracks/7/keys = {
+"times": PackedFloat32Array(0, 5, 5.1, 5.4, 8),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Color(0.8, 0.95, 1, 0), Color(0.8, 0.95, 1, 0), Color(0.8, 0.95, 1, 0.7), Color(0.8, 0.95, 1, 0), Color(0.8, 0.95, 1, 0)]
 }
 
 [sub_resource type="Animation" id="Animation_glitch"]
@@ -930,7 +989,28 @@ light_volumetric_fog_energy = 1.5
 omni_range = 2.4
 omni_attenuation = 1.218
 
+[node name="ImpactSparks" type="GPUParticles3D" parent="IonBeam"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -5, 0)
+emitting = true
+amount = 32
+lifetime = 0.8
+visibility_aabb = AABB(-2, -1, -2, 4, 4, 4)
+process_material = SubResource("ParticleProcessMaterial_sparks")
+draw_pass_1 = SubResource("QuadMesh_spark")
+
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 libraries = {
 &"": SubResource("AnimationLibrary_lquwl")
 }
+
+[node name="ScreenFlash" type="CanvasLayer" parent="."]
+layer = 100
+
+[node name="FlashRect" type="ColorRect" parent="ScreenFlash"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.8, 0.95, 1, 0)
