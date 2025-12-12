@@ -1,8 +1,13 @@
 shader_type spatial;
 
 // Ion Cannon Targeting Laser - A thin energy beam with visual effects
-// Uses a QuadMesh billboard for best visual control
+// Uses a QuadMesh with Y-axis billboard for best visual control
 render_mode unshaded, cull_disabled, depth_draw_opaque;
+
+// === BILLBOARD ===
+uniform bool billboard_enabled = true; // Rotate to face camera around Y axis
+
+varying vec3 world_vertex;
 
 // === CHARGE SYSTEM (Master Control) ===
 uniform float charge_level : hint_range(0.0, 1.0) = 1.0; // 0=off, 1=full power
@@ -165,6 +170,34 @@ float calc_beam(vec2 uv, float center, float current_width, float softness) {
     float half_w = current_width * 0.5;
     float edge = half_w * (1.0 - softness);
     return 1.0 - smoothstep(edge, half_w, dist);
+}
+
+void vertex() {
+    // Y-axis billboard: rotate quad to face camera while keeping vertical orientation
+    if (billboard_enabled) {
+        // Get camera position in model space
+        vec3 cam_pos = (inverse(MODEL_MATRIX) * vec4(INV_VIEW_MATRIX[3].xyz, 1.0)).xyz;
+        
+        // Calculate direction to camera on XZ plane only (ignore Y)
+        vec3 to_camera = cam_pos - vec3(0.0);
+        to_camera.y = 0.0;
+        to_camera = normalize(to_camera);
+        
+        // Calculate rotation angle around Y axis
+        float angle = atan(to_camera.x, to_camera.z);
+        
+        // Rotate vertex around Y axis
+        float cos_a = cos(angle);
+        float sin_a = sin(angle);
+        vec3 rotated = vec3(
+            VERTEX.x * cos_a + VERTEX.z * sin_a,
+            VERTEX.y,
+            -VERTEX.x * sin_a + VERTEX.z * cos_a
+        );
+        VERTEX = rotated;
+    }
+    
+    world_vertex = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
 
 void fragment() {

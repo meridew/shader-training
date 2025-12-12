@@ -36,7 +36,8 @@ func _compute_config_hash() -> int:
 	if not config:
 		return 0
 	# Simple hash of all config values
-	var h := hash(config.charge_level)
+	var h := hash(config.billboard_enabled)
+	h ^= hash(config.charge_level)
 	h ^= hash(config.use_charge_level)
 	h ^= hash(config.beam_color)
 	h ^= hash(config.core_color)

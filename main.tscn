@@ -38,6 +38,7 @@ size = Vector2(10, 10)
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_beam"]
 render_priority = 1
 shader = ExtResource("1_beam")
+shader_parameter/billboard_enabled = true
 shader_parameter/charge_level = 1.0
 shader_parameter/use_charge_level = false
 shader_parameter/beam_color = Color(0.2, 0.6, 1, 1)

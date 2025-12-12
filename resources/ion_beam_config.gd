@@ -7,6 +7,14 @@ extends Resource
 
 signal config_changed
 
+# === BILLBOARD ===
+@export_group("Billboard")
+@export var billboard_enabled: bool = true:
+	set(value):
+		billboard_enabled = value
+		emit_changed()
+		config_changed.emit()
+
 # === CHARGE SYSTEM (Master Control) ===
 @export_group("Charge System")
 @export_range(0.0, 1.0) var charge_level: float = 1.0:
@@ -326,6 +334,8 @@ var trans_type: int = 0:
 func apply_to_material(material: ShaderMaterial) -> void:
 	if not material:
 		return
+	# Billboard
+	material.set_shader_parameter("billboard_enabled", billboard_enabled)
 	# Charge System
 	material.set_shader_parameter("charge_level", charge_level)
 	material.set_shader_parameter("use_charge_level", use_charge_level)
