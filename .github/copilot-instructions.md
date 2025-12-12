@@ -39,9 +39,12 @@ A targeting laser effect using a `QuadMesh` billboard with `spatial` shader:
 | Easing | `tween_type` (0-8), `trans_type` (0-2) |
 
 **Scene-Level VFX:**
-- **ImpactLight** - OmniLight3D at beam bottom, syncs color/intensity with beam config
-- **OriginLight** - OmniLight3D at beam top, syncs color/intensity with beam config  
-- **ImpactSparks** - GPUParticles3D at impact point, emits upward sparks matching beam color
+- **ImpactLight** - OmniLight3D at beam bottom, animated color/intensity
+- **OriginLight** - OmniLight3D at beam top, animated color/intensity  
+- **ImpactSparks** - GPUParticles3D at impact point, emits upward sparks
+- **DirectionalLight3D** - Scene-wide illumination during fire (simulates beam lighting environment)
+- **WorldEnvironment** - Animated glow, volumetric fog emission, brightness/saturation adjustments
+- **Camera3D** - With CameraAttributesPractical for auto-exposure adaptation
 - **ScreenFlash** - CanvasLayer with ColorRect for white flash on fire animations
 
 **Architecture Pattern:**
@@ -51,7 +54,7 @@ A targeting laser effect using a `QuadMesh` billboard with `spatial` shader:
 
 **Control Hierarchy:**
 1. **Shader** - Visual rendering via uniforms (beam shape, color, effects)
-2. **AnimationPlayer** - Animates config properties, lights, and particles over time
+2. **AnimationPlayer** - Animates config properties, lights, particles, environment, and camera
 3. **Controller Script** - Applies config resource to shader material
 
 Lights and particles are controlled explicitly via AnimationPlayer tracks (not reactively by script).
