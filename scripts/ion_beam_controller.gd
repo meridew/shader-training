@@ -110,26 +110,29 @@ func _sync_lights() -> void:
 	if config.use_charge_level:
 		effective_intensity *= config.charge_level
 	
-	# Impact light (bottom of beam)
+	# Normalized intensity (default is 3.0)
+	var intensity_scale := effective_intensity / 3.0
+	
+	# Impact light (bottom of beam) - baseline: energy=1.5, range=3.5
 	var impact_light := get_node_or_null("ImpactLight") as OmniLight3D
 	if impact_light:
 		impact_light.light_color = config.beam_color
-		# Scale light energy with beam intensity and impact glow
-		var impact_energy := effective_intensity * 0.5
+		# Scale from baseline with intensity and impact glow
+		var impact_energy := 1.5 * intensity_scale
 		if config.impact_glow_size > 0:
 			impact_energy += config.impact_glow_intensity * config.impact_glow_size * 10.0
 		impact_light.light_energy = impact_energy
-		impact_light.omni_range = 2.0 + effective_intensity * 0.5
+		impact_light.omni_range = 3.5 * clampf(intensity_scale, 0.5, 2.0)
 		impact_light.visible = effective_intensity > 0.1
 	
-	# Origin light (top of beam)
+	# Origin light (top of beam) - baseline: energy=0.9, range=2.4
 	var origin_light := get_node_or_null("OriginLight") as OmniLight3D
 	if origin_light:
 		origin_light.light_color = config.beam_color
-		# Scale light energy with beam intensity and origin glow
-		var origin_energy := effective_intensity * 0.3
+		# Scale from baseline with intensity and origin glow
+		var origin_energy := 0.9 * intensity_scale
 		if config.origin_glow_size > 0:
 			origin_energy += config.origin_glow_intensity * config.origin_glow_size * 8.0
 		origin_light.light_energy = origin_energy
-		origin_light.omni_range = 1.5 + effective_intensity * 0.3
+		origin_light.omni_range = 2.4 * clampf(intensity_scale, 0.5, 1.5)
 		origin_light.visible = effective_intensity > 0.1
