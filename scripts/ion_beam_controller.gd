@@ -97,3 +97,39 @@ func _apply_config() -> void:
 		mat = mesh.surface_get_material(0) as ShaderMaterial
 	if mat:
 		config.apply_to_material(mat)
+	
+	# Sync child lights with beam config
+	_sync_lights()
+
+func _sync_lights() -> void:
+	if not config:
+		return
+	
+	# Calculate effective intensity based on charge level
+	var effective_intensity := config.intensity
+	if config.use_charge_level:
+		effective_intensity *= config.charge_level
+	
+	# Impact light (bottom of beam)
+	var impact_light := get_node_or_null("ImpactLight") as OmniLight3D
+	if impact_light:
+		impact_light.light_color = config.beam_color
+		# Scale light energy with beam intensity and impact glow
+		var impact_energy := effective_intensity * 0.5
+		if config.impact_glow_size > 0:
+			impact_energy += config.impact_glow_intensity * config.impact_glow_size * 10.0
+		impact_light.light_energy = impact_energy
+		impact_light.omni_range = 2.0 + effective_intensity * 0.5
+		impact_light.visible = effective_intensity > 0.1
+	
+	# Origin light (top of beam)
+	var origin_light := get_node_or_null("OriginLight") as OmniLight3D
+	if origin_light:
+		origin_light.light_color = config.beam_color
+		# Scale light energy with beam intensity and origin glow
+		var origin_energy := effective_intensity * 0.3
+		if config.origin_glow_size > 0:
+			origin_energy += config.origin_glow_intensity * config.origin_glow_size * 8.0
+		origin_light.light_energy = origin_energy
+		origin_light.omni_range = 1.5 + effective_intensity * 0.3
+		origin_light.visible = effective_intensity > 0.1
