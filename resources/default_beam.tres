@@ -4,4 +4,22 @@
 
 [resource]
 script = ExtResource("1_config")
-taper_top = 0.0
+billboard_enabled = null
+charge_level = null
+use_charge_level = null
+outer_glow_size = null
+outer_glow_intensity = null
+outer_glow_color = null
+chromatic_amount = null
+chromatic_speed = null
+energy_flow_speed = null
+energy_flow_strength = null
+jitter_amount = null
+jitter_speed = null
+origin_glow_size = null
+origin_glow_intensity = null
+impact_glow_size = null
+impact_glow_intensity = null
+use_noise_texture = null
+noise_scale = null
+noise_influence = null
