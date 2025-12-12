@@ -86,6 +86,10 @@ uniform float origin_glow_intensity : hint_range(0.0, 3.0) = 1.5;
 uniform float impact_glow_size : hint_range(0.0, 0.3) = 0.0; // Glow at bottom (impact)
 uniform float impact_glow_intensity : hint_range(0.0, 3.0) = 1.5;
 
+// === ENDPOINT CAPS (Hemispherical appearance) ===
+uniform float cap_size : hint_range(0.0, 0.2) = 0.05; // Size of curved cap region
+uniform bool cap_enabled = true;
+
 // === NOISE TEXTURE ===
 uniform sampler2D noise_texture : hint_default_white;
 uniform bool use_noise_texture = false;
@@ -361,6 +365,29 @@ void fragment() {
         impact_effect = smoothstep(impact_glow_size, 0.0, impact_dist) * impact_glow_intensity;
     }
     
+    // === ENDPOINT CAPS (Hemispherical appearance) ===
+    float cap_alpha = 1.0;
+    if (cap_enabled && cap_size > 0.0) {
+        // Calculate distance from beam center axis (normalized)
+        float center_dist = abs(working_uv.x - center) / max(current_width * 0.5, 0.001);
+        center_dist = clamp(center_dist, 0.0, 1.0);
+        
+        // Bottom cap (impact point) - hemisphere formula
+        if (working_uv.y < cap_size) {
+            float cap_progress = working_uv.y / cap_size;
+            // Hemisphere: visible radius increases as we move up from bottom
+            float cap_radius = sqrt(1.0 - pow(1.0 - cap_progress, 2.0));
+            cap_alpha *= smoothstep(1.0, 0.7, center_dist / max(cap_radius, 0.001));
+        }
+        
+        // Top cap (origin point)
+        if (working_uv.y > (1.0 - cap_size)) {
+            float cap_progress = (1.0 - working_uv.y) / cap_size;
+            float cap_radius = sqrt(1.0 - pow(1.0 - cap_progress, 2.0));
+            cap_alpha *= smoothstep(1.0, 0.7, center_dist / max(cap_radius, 0.001));
+        }
+    }
+    
     // === SCANLINES ===
     float scanline = 1.0;
     if (scanline_strength > 0.0) {
@@ -399,6 +426,7 @@ void fragment() {
     float final_alpha = max(main_beam, max(halo, outer_glow)) * smoothstep(0.0, 0.1, width_mult);
     final_alpha = max(final_alpha, (origin_effect + impact_effect) * 0.5);
     final_alpha *= effective_charge; // Fade with charge
+    final_alpha *= cap_alpha; // Apply hemispherical cap falloff
     
     // === APPLY HEAT DISTORTION ===
     // Blend distorted background where the heat haze is visible but beam isn't

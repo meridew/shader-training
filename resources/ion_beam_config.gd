@@ -295,6 +295,20 @@ signal config_changed
 		emit_changed()
 		config_changed.emit()
 
+# === ENDPOINT CAPS ===
+@export_group("Endpoint Caps")
+@export_range(0.0, 0.2) var cap_size: float = 0.05:
+	set(value):
+		cap_size = value
+		emit_changed()
+		config_changed.emit()
+
+@export var cap_enabled: bool = true:
+	set(value):
+		cap_enabled = value
+		emit_changed()
+		config_changed.emit()
+
 # === NOISE TEXTURE ===
 @export_group("Noise Texture")
 @export var noise_texture: Texture2D:
@@ -432,6 +446,9 @@ func apply_to_material(material: ShaderMaterial) -> void:
 	material.set_shader_parameter("origin_glow_intensity", origin_glow_intensity)
 	material.set_shader_parameter("impact_glow_size", impact_glow_size)
 	material.set_shader_parameter("impact_glow_intensity", impact_glow_intensity)
+	# Endpoint Caps
+	material.set_shader_parameter("cap_size", cap_size)
+	material.set_shader_parameter("cap_enabled", cap_enabled)
 	# Noise Texture
 	if noise_texture:
 		material.set_shader_parameter("noise_texture", noise_texture)

@@ -79,6 +79,8 @@ func _compute_config_hash() -> int:
 	h ^= hash(config.origin_glow_intensity)
 	h ^= hash(config.impact_glow_size)
 	h ^= hash(config.impact_glow_intensity)
+	h ^= hash(config.cap_size)
+	h ^= hash(config.cap_enabled)
 	h ^= hash(config.noise_texture)
 	h ^= hash(config.use_noise_texture)
 	h ^= hash(config.noise_scale)
