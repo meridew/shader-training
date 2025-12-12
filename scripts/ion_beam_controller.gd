@@ -25,8 +25,8 @@ func _ready() -> void:
 		_apply_config()
 
 func _process(_delta: float) -> void:
-	# Poll for changes in editor since signal may not always fire
-	if Engine.is_editor_hint() and config:
+	# Poll for changes - needed for both editor preview and runtime animation
+	if config:
 		var current_hash := _compute_config_hash()
 		if current_hash != _last_config_hash:
 			_last_config_hash = current_hash
